@@ -27,6 +27,24 @@ class GHAapp < Sinatra::Application
   # The GitHub App's identifier (type integer) set when registering an app.
   APP_IDENTIFIER = ENV['GITHUB_APP_IDENTIFIER']
 
+  # The questions to ask in the SIA:
+  SIA_QUESTIONS = [
+	"Are there any changes which would modify the manner in which any applicable FedRAMP Control has been implemented?",
+	"Are any major tools, services, or appliances called out in the SSP being added, removed, or otherwise replaced? (e.g. SIEM, IdP, or Vulnerability Scanner are replaced with a different tool)",
+	"Is the OS major version or OS distribution being changed on any hosts in the environment?  (e.g. CentOS is replaced with RHEL; RHEL7 is being upgraded to RHEL8)",
+	"Is the database major version or database flavor being changed on any databases in the environment?  (e.g. a Microsoft SQL database is replaced with a PostgreSQL database; a PostgresSQL database is upgraded from version 10.x to version 11.x)",
+	"Is an upgrade of any tool, service, appliance, or software package's major version or feature release being performed? (e.g. TrendMicro DSM is upgraded from version 12.x to version 20.x)",
+	"Are infrastructure assets being added or removed to the environment?  (e.g. New servers or databases are provisioned)",
+	"Are Backup systems/processes being changed?",
+	"Is this a major software release for the Application in the environment?  (e.g. new features, modules, apps)",
+	"Are there any changes to process flow(s) or data flow(s)?",
+	"Is any data which is generated, used, processed, or otherwise a component of the Application(s) modified or changed in any way?",
+	"Are changes being made to FIPS module(s)? (e.g. a FIPS module is upgraded to the latest version from the vendor)",
+	"Is there a change to the underlying Cloud Infrastructure as a Service (IaaS) Provider?",
+	"Are there any changes to external services, data feeds, or vendor connections?",
+	"Are there any changes to existing external service providers?"
+	]
+
   # Turn on Sinatra's verbose logging during development
   configure :development do
     set :logging, Logger::DEBUG
@@ -81,7 +99,12 @@ class GHAapp < Sinatra::Application
       )
 
       # Updated check run summary and text parameters
-      summary = 'Is this a significant change?'
+      summary_question = "Is this a significant change? (If you answer 'Yes' or 'Possibly' to any of the below questions, please click 'Yes')"
+      sia_list = "\n"
+      SIA_QUESTIONS.each do |question|
+        sia_list + " - #{question}\n"
+      end
+      summary = summary_question + sia_list
       text = 'Learn more at: https://wiki.corp.rapid7.com/display/PD/Fedramp+Significant+Change+Management'
       conclusion = 'failure'
 
@@ -133,7 +156,7 @@ class GHAapp < Sinatra::Application
           output: {
             title: 'Security Impact Analysis Required',
             summary: SIA_FORM,
-            # summary: 'Please provide a security impact analysis.',
+            # summary: 'Please provide a complete security impact analysis through an in-boundary JIRA ticket and discuss this change with the change review board.  Once the changes are reviewed and these  steps are completed, this PR can be merged.',
             text: 'Sample SIA here: https://docs.google.com/spreadsheets/d/18qCKxDyzqi6gvYV-HQBl8GChx2BUUiCZqnLxIW1dm-M'
           },
           actions: [{
